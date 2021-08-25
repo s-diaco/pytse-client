@@ -25,5 +25,13 @@ INSTRUMENT_DAY_INFO_URL = (
     "http://cdn.tsetmc.com/Loader.aspx?ParTree=15131P&i={index}&d={date}"
 )
 
+PRICE_ADJUSTMENT_URL = (
+    "http://www.tsetmc.com/Loader.aspx?Partree=15131G&i={}"
+)
+
+STOCK_SPLITS_URL = (
+    "http://www.tsetmc.com/Loader.aspx?Partree=15131H&i={}"
+)
+
 DATE_FORMAT = "%Y%m%d"
 MIN_DATE = 20010321
