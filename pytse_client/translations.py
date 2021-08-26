@@ -21,11 +21,11 @@ SHAREHOLDERS_FIELD_MAPPINGS = {
 ADJUSTMENT_FIELD_MAPPINGS = {
     "قبل از تعدیل": "price_before_adj",
     "تعدیل شده": "price_after_adj",
-    "تاریخ": "j_date"
+    "تاریخ": "jdate"
 }
 
 STOCK_SPLIT_FIELD_MAPPINGS = {
     "سهام قبلی": "shares_before_split",
     "سهام جدید": "shares_after_split",
-    "تاریخ": "j_date"
+    "تاریخ": "jdate"
 }

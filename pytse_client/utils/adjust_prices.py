@@ -12,6 +12,19 @@ class PriceAdjust:
         self._stock_split_url = tse_settings.TSE_STOCK_SPLIT_URL.format(
             self._index)
 
+    def adj_prices(
+        self, df, adj_by_dividend, adj_by_split) -> pd.DataFrame:
+        if adj_by_split:
+            split_df = self.stock_spilts()
+            split_df.index = split_df.date
+            df.index = df.date
+            df = df.merge(split_df[['split_coef']], left_index=True,
+                right_index=True, how='outer')
+            df = self.calculate_adjusted(df)
+        if adj_by_dividend:
+            pass
+        return df
+
     def price_adjustments(self) -> pd.DataFrame:
         """
         Returns the adjustment data for the given index.
@@ -25,7 +38,7 @@ class PriceAdjust:
         adjustments_df = adjustments_df.rename(
             columns=translations.ADJUSTMENT_FIELD_MAPPINGS
         )
-        adjustments_df["date"] = adjustments_df["j_date"].apply(
+        adjustments_df["date"] = adjustments_df["jdate"].apply(
             lambda x: jdatetime.date(
                 int(x.split("/")[0]),
                 int(x.split("/")[1]),
@@ -48,7 +61,7 @@ class PriceAdjust:
         )
         stock_split_df["split_coef"] = stock_split_df["shares_after_split"] / \
             stock_split_df["shares_before_split"]
-        stock_split_df["date"] = stock_split_df["j_date"].apply(
+        stock_split_df["date"] = stock_split_df["jdate"].apply(
             lambda x: jdatetime.date(
                 int(x.split("/")[0]),
                 int(x.split("/")[1]),
@@ -60,14 +73,11 @@ class PriceAdjust:
         # we will go from today to the past
         new = df.sort_index(ascending=False)
 
-        split_coef = new['split coefficient'].shift(1
+        split_coef = new['split_coef'].shift(1
             ).fillna(1).cumprod()
 
         for col in ['open', 'high', 'low', 'close']:
             new['adj_' + col] = new[col] / split_coef
         new['adj_volume'] = split_coef * new['volume']
-
-        if dividends:
-            new['adj_dividends'] = new['dividend amount'] / split_coef
 
         return new.sort_index(ascending=True)

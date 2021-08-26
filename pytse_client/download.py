@@ -8,7 +8,7 @@ from requests import HTTPError
 import jdatetime
 
 from pytse_client import config, symbols_data, translations, tse_settings
-from pytse_client.utils import requests_retry_session
+from pytse_client.utils import adjust_prices, requests_retry_session
 from pytse_client.tse_settings import TSE_CLIENT_TYPE_DATA_URL
 
 
@@ -16,7 +16,9 @@ def download(
         symbols: Union[List, str],
         write_to_csv: bool = False,
         include_jdate: bool = False,
-        base_path: str = config.DATA_BASE_PATH) -> Dict[str, pd.DataFrame]:
+        base_path: str = config.DATA_BASE_PATH,
+        adj_by_split: bool = False,
+        adj_by_dividend: bool = False) -> Dict[str, pd.DataFrame]:
     if symbols == "all":
         symbols = symbols_data.all_symbols()
     elif isinstance(symbols, str):
@@ -43,6 +45,12 @@ def download(
             df = df.rename(columns=translations.HISTORY_FIELD_MAPPINGS)
             df = df.drop(columns=["<PER>", "<TICKER>"])
             _adjust_data_frame(df, include_jdate)
+            if adj_by_dividend or adj_by_split:
+                price_adj = adjust_prices.PriceAdjust(ticker_index)
+                df = price_adj.adj_prices(
+                                df,
+                                adj_by_dividend,
+                                adj_by_split)
             df_list[symbol] = df
             if write_to_csv:
                 Path(base_path).mkdir(parents=True, exist_ok=True)
