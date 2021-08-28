@@ -8,4 +8,4 @@ sys.path.insert(0, parentdir)
 
 import download
 
-download.download("غبهنوش", adj_by_split=True)
+download.download("همراه", adj_by_split=True, write_to_csv=True, base_path="temp_data")

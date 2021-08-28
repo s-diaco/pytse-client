@@ -20,9 +20,16 @@ class PriceAdjust:
             df.index = df.date
             df = df.merge(split_df[['split_coef']], left_index=True,
                 right_index=True, how='outer')
+            df['split_coef'] = df['split_coef'].fillna(1)
             df = self.calculate_adjusted(df)
         if adj_by_dividend:
-            pass
+            divid_df = self.price_adjustments()
+            divid_df.index = divid_df.date
+            df.index = df.date
+            df = df.merge(divid_df[['div_coef']], left_index=True,
+                right_index=True, how='outer')
+            df['div_coef'] = df['div_coef'].fillna(0)
+            df = self.calculate_adjusted(df, dividends=True)
         return df
 
     def price_adjustments(self) -> pd.DataFrame:
@@ -38,6 +45,8 @@ class PriceAdjust:
         adjustments_df = adjustments_df.rename(
             columns=translations.ADJUSTMENT_FIELD_MAPPINGS
         )
+        adjustments_df["adj_diff"] = adjustments_df["price_before_adj"] - \
+            adjustments_df["price_after_adj"]
         adjustments_df["date"] = adjustments_df["jdate"].apply(
             lambda x: jdatetime.date(
                 int(x.split("/")[0]),
@@ -69,7 +78,7 @@ class PriceAdjust:
         )
         return stock_split_df
 
-    def calculate_adjusted(self, df, dividends=False):
+    def adjust_splits(self, df):
         # we will go from today to the past
         new = df.sort_index(ascending=False)
 
@@ -78,6 +87,18 @@ class PriceAdjust:
 
         for col in ['open', 'high', 'low', 'close']:
             new['adj_' + col] = new[col] / split_coef
+        new['adj_volume'] = split_coef * new['volume']
+
+        return new.sort_index(ascending=True)
+
+    def calculate_adjusted(self, df):
+        new = df.sort_index(ascending=False)
+
+        split_coef = new['adj_diff'].shift(1
+            ).fillna(0).cumsum()
+
+        for col in ['open', 'high', 'low', 'close']:
+            new['adj_2_' + col] = new[col] / split_coef
         new['adj_volume'] = split_coef * new['volume']
 
         return new.sort_index(ascending=True)
