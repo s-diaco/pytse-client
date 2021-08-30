@@ -1,6 +1,7 @@
 import bs4
 import jdatetime
 import pandas as pd
+import numpy as np
 from pytse_client import translations, tse_settings, utils
 
 
@@ -18,20 +19,26 @@ class PriceAdjust:
             split_df = self.stock_spilts()
             split_df.index = split_df.date
             df.index = df.date
-            df = df.merge(split_df[['split_coef']], left_index=True,
+            df = df.merge(
+                split_df[['split_coef']],
+                left_index=True,
                 right_index=True, how='outer')
             df = df.drop(columns=['date'])
             df['split_coef'] = df['split_coef'].fillna(1)
             df = self.adjust_splits(df)
+            df = df.reset_index()
         if adj_by_dividend:
             divid_df = self.price_adjustments()
             divid_df.index = divid_df.date
             df.index = df.date
-            df = df.merge(divid_df[['adj_diff']], left_index=True,
+            df = df.merge(
+                divid_df[['adj_diff']],
+                left_index=True,
                 right_index=True, how='outer')
             df = df.drop(columns=['date'])
             df['adj_diff'] = df['adj_diff'].fillna(0)
             df = self.calculate_adjusted(df)
+            df = df.reset_index()
         return df
 
     def price_adjustments(self) -> pd.DataFrame:
@@ -50,10 +57,10 @@ class PriceAdjust:
         adjustments_df["adj_diff"] = adjustments_df["price_before_adj"] - \
             adjustments_df["price_after_adj"]
         adjustments_df["date"] = adjustments_df["jdate"].apply(
-            lambda x: jdatetime.date(
+            lambda x: np.datetime64(jdatetime.date(
                 int(x.split("/")[0]),
                 int(x.split("/")[1]),
-                int(x.split("/")[2])).togregorian()
+                int(x.split("/")[2])).togregorian())
         )
         return adjustments_df
 
@@ -73,10 +80,10 @@ class PriceAdjust:
         stock_split_df["split_coef"] = stock_split_df["shares_after_split"] / \
             stock_split_df["shares_before_split"]
         stock_split_df["date"] = stock_split_df["jdate"].apply(
-            lambda x: jdatetime.date(
+            lambda x: np.datetime64(jdatetime.date(
                 int(x.split("/")[0]),
                 int(x.split("/")[1]),
-                int(x.split("/")[2])).togregorian()
+                int(x.split("/")[2])).togregorian())
         )
         return stock_split_df
 
@@ -100,7 +107,7 @@ class PriceAdjust:
             ).fillna(0).cumsum()
 
         for col in ['open', 'high', 'low', 'close']:
-            new['adj_2_' + col] = new[col] / split_coef
+            new['adj_2_' + col] = new[col] - split_coef
         new['adj_volume'] = split_coef * new['volume']
 
         return new.sort_index(ascending=True)
