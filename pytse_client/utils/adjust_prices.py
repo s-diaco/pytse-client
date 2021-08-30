@@ -20,6 +20,7 @@ class PriceAdjust:
             df.index = df.date
             df = df.merge(split_df[['split_coef']], left_index=True,
                 right_index=True, how='outer')
+            df = df.drop(columns=['date'])
             df['split_coef'] = df['split_coef'].fillna(1)
             df = self.adjust_splits(df)
         if adj_by_dividend:
@@ -28,6 +29,7 @@ class PriceAdjust:
             df.index = df.date
             df = df.merge(divid_df[['adj_diff']], left_index=True,
                 right_index=True, how='outer')
+            df = df.drop(columns=['date'])
             df['adj_diff'] = df['adj_diff'].fillna(0)
             df = self.calculate_adjusted(df)
         return df
